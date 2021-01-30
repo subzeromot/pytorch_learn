@@ -10,6 +10,8 @@ import numpy as np
 
 from lenet import LeNet
 from densenet import densenet_cifar
+from resnet import *
+from vgg import *
 
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
@@ -111,8 +113,14 @@ def main():
     ### DenseNet
     # net = densenet_cifar().to(device)
 
-    ### LeNET
-    net = LeNet().to(device)
+    ### LeNet
+    # net = LeNet().to(device)
+
+    ### ResNet
+    # net = ResNet34().to(device)
+
+    ### VGG
+    net = VGG('VGG16').to(device)
 
     process = Process(net)
     num_epoch = 2

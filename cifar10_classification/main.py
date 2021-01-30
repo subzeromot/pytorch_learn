@@ -7,10 +7,14 @@ import torchvision
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import numpy as np
+
+from lenet import LeNet
 from densenet import densenet_cifar
 
+device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+
 class Process:
-    def __init__(self):
+    def __init__(self, _net):
         # Transform function
         self.transform = transforms.Compose([
             transforms.RandomHorizontalFlip(),
@@ -25,14 +29,14 @@ class Process:
         self.train_loader = torch.utils.data.DataLoader(train_set, batch_size=128, shuffle=True, num_workers=4)
         self.test_loader = torch.utils.data.DataLoader(test_set, batch_size=128, shuffle=False, num_workers=4)
 
-        self.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-        print(self.device)
+        device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+        print(device)
 
         # Load NET
-        self.net = densenet_cifar().to(self.device)
+        self.net = _net
         # print(net)
 
-        if self.device == 'cuda':
+        if device == 'cuda':
             self.net = nn.DataParallel(self.net)
             torch.backends.cudnn.benchmark = True
 
@@ -54,7 +58,7 @@ class Process:
         correct = 0
         total = 0
         for batch_idx, (inputs, targets) in enumerate(self.train_loader):
-            inputs, targets = inputs.to(self.device), targets.to(self.device)
+            inputs, targets = inputs.to(device), targets.to(device)
             self.optimizer.zero_grad()
             outputs = self.net(inputs)
             loss = self.criterion(outputs, targets)
@@ -79,7 +83,7 @@ class Process:
         total = 0
         with torch.no_grad():
             for batch_idx, (inputs, targets) in enumerate(self.test_loader):
-                inputs, targets = inputs.to(self.device), targets.to(self.device)
+                inputs, targets = inputs.to(device), targets.to(device)
                 outputs = self.net(inputs)
                 loss = self.criterion(outputs, targets)
 
@@ -104,21 +108,19 @@ class Process:
         plt.savefig('result.png')
 
 def main():
-    process = Process()
-    load_model = False
-    if load_model:
-        checkpoint = torch.load('./checkpoint/densenet.ckpt')
-        net.load_state_dict(checkpoint['net'])
-        start_epoch = checkpoint['epoch']
-    else:
-        start_epoch = 0
-    print('start_epoch: %s' % start_epoch)
+    ### DenseNet
+    # net = densenet_cifar().to(device)
+
+    ### LeNET
+    net = LeNet().to(device)
+
+    process = Process(net)
+    num_epoch = 2
 
     train_losses = []
     test_losses = []
 
-    for epoch in range(start_epoch, 1):
-        # scheduler.step()
+    for epoch in range(num_epoch):
         process.scheduler_step()
         train_loss = process.train(epoch)
         test_loss = process.test(epoch)
